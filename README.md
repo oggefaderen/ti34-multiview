@@ -48,7 +48,19 @@ To drop it in your Applications folder:
 cp -R "dist/TI-34 MultiView.app" /Applications/
 ```
 
-You can also just open `src/ui/index.html` in a browser.
+### Running the UI in a browser
+
+The UI is plain ES modules, and browsers refuse module imports over `file://`
+(they are CORS-checked, and a `file://` origin can never satisfy that check).
+So serve it rather than double-clicking it:
+
+```bash
+python3 -m http.server 8000
+open http://localhost:8000/src/ui/index.html
+```
+
+The app itself doesn't need this — it serves the bundle over an internal
+custom URL scheme for exactly this reason.
 
 ## Keyboard map
 
