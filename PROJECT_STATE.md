@@ -4,7 +4,7 @@
 the end of every work session so that a new person — or a new agent with no
 conversation history — can continue without needing to reconstruct context.
 
-Last updated: 2026-09-11 · commit `6467722` · branch `main` · CI green · 279 tests
+Last updated: 2026-09-11 · commit `a911734` · branch `main` · 337 tests · **the app works end to end**
 
 ---
 
@@ -34,38 +34,23 @@ to the real device.
 
 ## Status
 
-### Done
-
-- Repo, CI (engine tests on Linux + a real `./build.sh` on macOS) — **green**.
-- `docs/TI-34-SPEC.md`, `docs/ARCHITECTURE.md` — the two governing documents.
-- `src/engine/tokens.js` — 45-key table, single source of truth for the layout.
-- `src/engine/value.js`, `src/engine/eos.js` — math core. Read the Node-shape
-  contract in `eos.js`'s header before touching anything that builds entries.
-- `src/engine/stats.js` — 1-var and 2-var statistics; the guidebook's
-  braking-distance dataset reproduces its published regression exactly.
-- `src/engine/format.js` — Value -> Layout, notation modes, MathPrint.
-- `src/engine/menus.js` — every menu as data, plus navigation. Exports
-  `MODE_DEFAULTS`, which calculator.js should adopt as its initial mode state.
-- `src/ui/index.html`, `src/ui/faceplate.css` — faceplate replica.
-- `src/ui/render.js`, `src/ui/input.js` — DisplayModel -> DOM, and the
-  keyboard/click mapping.
-- `mac/main.swift`, `build.sh` — the app builds, launches, and reports
-  `ui ready: 45 keys rendered` from inside the bundle.
-
-**279 tests passing.**
-
-### In progress
+### Done — all units complete
 
 | Unit | Files |
 |---|---|
+| Key table | `src/engine/tokens.js` |
+| Math core | `src/engine/value.js`, `src/engine/eos.js` |
+| Statistics | `src/engine/stats.js` |
+| Display formatting | `src/engine/format.js` |
+| Menus | `src/engine/menus.js` |
 | Entry-line editing | `src/engine/entry.js` |
+| State machine | `src/engine/calculator.js` |
+| Faceplate, renderer, input | `src/ui/*` |
+| macOS shell | `mac/main.swift`, `build.sh` |
 
-### Not started
-
-| Unit | Files | Notes |
-|---|---|---|
-| State machine | `src/engine/calculator.js` | the integration point; everything else waits on it |
-| Final wiring | `src/ui/index.html` | still renders static placeholder content; must import render.js + input.js and drive them from calculator.js |
+**337 tests passing. CI green.** The built app launches, reports
+`ui ready: 45 keys rendered`, and computes correctly from the physical
+keyboard — verified end to end, not just in unit tests.
 
 ---
 
@@ -169,14 +154,26 @@ checkout with one command.
 
 ## Known divergences from the real TI-34
 
-Nothing verified yet — the engine isn't finished. Record anything found here so
-a later reader doesn't mistake a known gap for a fresh bug.
+These are known gaps, not undiscovered bugs. The list at the foot of
+`calculator.js` is the authoritative version; keep the two in step.
+
+- **The cursor renders at the end of the entry line**, not at its true
+  position inside a MathPrint fraction or exponent. Placing it properly needs
+  a mapping from the cursor path to a rendered column, which `format.js` does
+  not expose yet.
+- **The `data` editor (spec 6.1) is not wired.** Its menu opens, but cell
+  editing and list conversions are missing, so 1-Var/2-Var statistics cannot
+  be run from the keypad. `stats.js` itself is complete and tested — this is
+  purely the editing UI.
+- **`2nd [,]` is not wired**, so the two-argument forms of `round`, `lcm`,
+  `gcd`, `min`, `max`, `remainder` and `randint(` cannot be entered.
+- **`x10ⁿ` enters `× 10 ^ n`** rather than eos.js's `sci` node. It evaluates
+  identically and stays editable; only the internal representation differs.
+- **`rand`/`randint` are not implemented** in the expression layer.
 
 Open questions inherited from the guidebook itself are in
-`docs/TI-34-SPEC.md` section 8. The ones most likely to bite: the exact
-OVERFLOW threshold, the rounding rule for the 10th displayed digit, and whether
-the data menu tabs read `CLEAR`/`CNVRSN` or `CLR`/`FORMULA` on current
-firmware.
+`docs/TI-34-SPEC.md` section 8 — most notably the exact OVERFLOW threshold
+and the rounding rule for the 10th displayed digit.
 
 ---
 
@@ -194,12 +191,15 @@ firmware.
 
 ## Next action
 
-Build `src/engine/calculator.js`, the last piece. It owns `initialState`,
-`press` and `render`, and integrates entry.js, menus.js, eos.js, format.js and
-stats.js. Specifically it must own: the 2nd-key flag, the menu stack and acting
-on selections, history and previous-entry recall, `ans`, the memory variables
-and `sto►`, the `◄►` exact/decimal toggle state, `op1`/`op2` stored operations,
-`►simp`, and catching `CalcError` into the error display.
+The app is usable. The highest-value remaining work, in order:
 
-Then hand `render.js` a real `DisplayModel` and confirm a full calculation
-works end to end in the app, by keyboard as well as by clicking.
+1. **The data editor** — the last substantial feature, and the one a stats
+   question in the exam would need. `stats.js` is ready; this is the editing
+   screen and `2nd [stat]`'s setup/CALC flow.
+2. **True cursor placement** inside MathPrint structures.
+3. **`2nd [,]`** and the two-argument functions.
+
+Before trusting any of it in anger, work through a past paper on it and
+compare against a real TI-34 where you can. Anything that differs is a bug
+worth a one-line test — `press` and `render` are pure, so any misbehaviour
+reproduces as a key sequence plus an expected screen.
