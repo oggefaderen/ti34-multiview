@@ -78,3 +78,21 @@ test('no key is both a direct mapping and a macro', () => {
     assert.ok(!(k in DIRECT_KEY_MAP), `"${k}" is mapped twice`);
   }
 });
+
+/* -------------------------------------------------------------------------- */
+/* Regression: inverse video must not resolve against its own colour           */
+/* -------------------------------------------------------------------------- */
+
+test('the renderer never paints a background with currentColor', async () => {
+  // `background: currentColor` resolves against the element's OWN `color`.
+  // The menu highlight set both in one rule, so the selected row painted its
+  // text and background the same colour and became invisible — the menu
+  // looked like it was missing its first item. Inverse video must state both
+  // colours explicitly.
+  const { readFile } = await import('node:fs/promises');
+  const src = await readFile(new URL('../src/ui/render.js', import.meta.url), 'utf8');
+  assert.ok(
+    !/background\s*:\s*currentColor/i.test(src),
+    'use explicit colours for inverse video, not currentColor',
+  );
+});

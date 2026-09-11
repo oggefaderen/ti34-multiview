@@ -220,6 +220,34 @@ body {
   gap: 0.3em;
 }
 
+/* ---- Menus (spec 3, 4) -------------------------------------------------- */
+
+/* Menus use the narrower font: 5 lines of 19 characters, against the home
+   screen's 4 x 16 (spec section 0). */
+#display-menu {
+  font-size: calc(var(--fp-unit) * 3.4);
+  line-height: 1.16;
+}
+
+/* Inverse video marks the highlighted item and the active tab.
+   Both colours must be stated explicitly: `background: currentColor` resolves
+   against the element's own `color`, so setting them together in one rule
+   painted the text and its background the same colour and the selected row
+   vanished. */
+.menu-inverse {
+  background: var(--color-lcd-ink);
+  color: var(--color-lcd-bg);
+  border-radius: 0.12em;
+  padding: 0 0.25em;
+}
+
+/* Tabs sit side by side at the top of the panel, not pushed to the edges. */
+.menu-tabs {
+  display: flex;
+  gap: 1.4em;
+  justify-content: flex-start;
+}
+
 /* ---- Display line layout ------------------------------------------------ */
 
 .lcd-lines {

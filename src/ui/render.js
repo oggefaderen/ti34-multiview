@@ -225,19 +225,17 @@ function renderMenu(lcdEl, menu) {
     lcdEl.appendChild(panel);
   }
   panel.hidden = false;
-  panel.style.cssText = 'display:flex;flex-direction:column;flex:1 1 auto;gap:0.15em;overflow:hidden;';
+  panel.style.cssText = 'display:flex;flex-direction:column;flex:1 1 auto;gap:0.1em;overflow:hidden;';
   while (panel.firstChild) panel.removeChild(panel.firstChild);
 
   if (menu.tabs && menu.tabs.length) {
     const tabRow = document.createElement('div');
-    tabRow.className = 'lcd-line two-part';
+    tabRow.className = 'lcd-line menu-tabs';
     const active = menu.activeTab ?? 0;
     menu.tabs.forEach((tab, i) => {
       const span = document.createElement('span');
       span.textContent = tab;
-      if (i === active) {
-        span.style.cssText = 'background:currentColor;color:var(--color-lcd-bg,#7f9686);padding:0 0.2em;border-radius:0.15em;';
-      }
+      if (i === active) span.className = 'menu-inverse';
       tabRow.appendChild(span);
     });
     panel.appendChild(tabRow);
@@ -253,7 +251,12 @@ function renderMenu(lcdEl, menu) {
     row.className = 'lcd-line align-left';
     row.textContent = typeof item === 'string' ? item : (item && item.label) || String(item);
     if (i === menu.selected) {
-      row.style.cssText = 'background:currentColor;color:var(--color-lcd-bg,#7f9686);border-radius:0.1em;';
+      // Wrap the text so the highlight hugs it rather than spanning the row.
+      const mark = document.createElement('span');
+      mark.className = 'menu-inverse';
+      mark.textContent = row.textContent;
+      row.textContent = '';
+      row.appendChild(mark);
     }
     panel.appendChild(row);
   });
