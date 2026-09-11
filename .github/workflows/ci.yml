@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: engine tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/
+
+  build:
+    name: macOS app builds
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./build.sh
+      - run: test -d "dist/TI-34 MultiView.app"

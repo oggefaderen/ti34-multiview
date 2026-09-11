@@ -1,0 +1,10 @@
+{
+  "name": "ti34-multiview",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A virtual TI-34 MultiView scientific calculator for macOS",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}
