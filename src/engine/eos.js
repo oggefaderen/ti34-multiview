@@ -31,7 +31,7 @@
 //   {t:'sqrt',  arg: Node[]}
 //   {t:'root',  idx: Node[], arg: Node[]}            x-root y (self-contained)
 //   {t:'pow',   exp: Node[]}                          attaches to preceding base
-//   {t:'postfix', v: 'square'|'factorial'|'percent'|'deg'|'min'|'sec'|'rad'
+//   {t:'postfix', v: 'square'|'cube'|'factorial'|'percent'|'deg'|'min'|'sec'|'rad'
 //                   |'pct_convert'|'dms_convert'|'frac_convert'}
 //                                                     attaches to preceding value
 //   {t:'func',  v: <name>, arg: Node[], arg2?: Node[]}
@@ -47,6 +47,12 @@
 // yet built) owns turning a Value into the DMS/mixed-number/percent text.
 
 import * as value from './value.js';
+
+/** Digits -> Value: decimals stay approximate, integers stay exact. */
+function numberNodeValue(digits) {
+  const v = value.fromDigits(digits);
+  return String(digits).includes('.') ? value.flt(value.toNumber(v)) : v;
+}
 const { CalcError } = value;
 
 /**
@@ -210,6 +216,11 @@ function applyPostfixOps(nodes, i, v, ctx) {
       case 'square':
         v = value.pow(v, value.rat(2n, 1n));
         break;
+      // The MATH menu's cube is applied to the value you already typed, the
+      // same way x2 is -- not as a prefix function taking an argument.
+      case 'cube':
+        v = value.pow(v, value.rat(3n, 1n));
+        break;
       case 'factorial':
         v = evalFactorial(v);
         break;
@@ -244,7 +255,12 @@ function parsePrimary(nodes, i, ctx) {
   if (!node) throw new CalcError('SYNTAX');
   switch (node.t) {
     case 'num':
-      return { value: value.fromDigits(node.v), i: i + 1 };
+      // A number typed WITH a decimal point is a decimal, and its results
+      // display as decimals: 3.75 reads "3.75", not "3 75/100". Exact
+      // rational arithmetic is for values that arrive exact — integers, and
+      // fractions entered with n/d — which is why 1 / 3 still gives 1/3 and
+      // the ◄► toggle has something to switch.
+      return { value: numberNodeValue(node.v), i: i + 1 };
     case 'sci': {
       const mantissa = value.fromDigits(node.v);
       const exp = value.fromDigits(node.exp);

@@ -165,6 +165,8 @@ These are known gaps, not undiscovered bugs. The list at the foot of
   editing and list conversions are missing, so 1-Var/2-Var statistics cannot
   be run from the keypad. `stats.js` itself is complete and tested — this is
   purely the editing UI.
+- **`rand` / `randint(` do nothing** — the PRB menu's RAND tab is present but
+  the expression layer has no random-number support.
 - **`2nd [,]` is not wired**, so the two-argument forms of `round`, `lcm`,
   `gcd`, `min`, `max`, `remainder` and `randint(` cannot be entered.
 - **`x10ⁿ` enters `× 10 ^ n`** rather than eos.js's `sci` node. It evaluates

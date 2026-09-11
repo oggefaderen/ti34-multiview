@@ -274,3 +274,66 @@ test('FIX and SCI indicators follow the mode', () => {
   s = press(s, 'enter');
   assert.equal(render(s).indicators.sci, true);
 });
+
+/* -------------------------------------------------------------------------- */
+/* Menu functions (spec 4.2-4.6)                                               */
+/*                                                                             */
+/* These had no coverage, and every one of them was silently broken: the       */
+/* lookup matched a menu item's DISPLAYED label ("1: log("), which never       */
+/* equals its bare text ("log("), so selecting any function inserted nothing   */
+/* at all and log(100) quietly returned 100.                                   */
+/* -------------------------------------------------------------------------- */
+
+/** Key sequences for reaching a menu item: open, switch tab, step down, select. */
+const trigItem = (i) => `second pi ${'down '.repeat(i - 1)}enter`;
+const logItem = (tab, i) => `second prb ${'right '.repeat(tab)}${'down '.repeat(i - 1)}enter`;
+const mathItem = (tab, i) => `math ${'right '.repeat(tab)}${'down '.repeat(i - 1)}enter`;
+const prbItem = (tab, i) => `prb ${'right '.repeat(tab)}${'down '.repeat(i - 1)}enter`;
+
+test('spec 4.5 — the trig menu computes in DEG', () => {
+  assert.equal(answer(run(`${trigItem(1)} 3 0 enter`)), '0.5', 'sin(30)');
+  assert.equal(answer(run(`${trigItem(2)} 6 0 enter`)), '0.5', 'cos(60)');
+  assert.equal(answer(run(`${trigItem(3)} 4 5 enter`)), '1', 'tan(45)');
+  assert.equal(answer(run(`${trigItem(4)} . 5 enter`)), '30', 'sin inverse of 0.5');
+});
+
+test('spec 4.4 — the log menu', () => {
+  assert.equal(answer(run(`${logItem(0, 1)} 1 0 0 enter`)), '2', 'log(100)');
+  assert.equal(answer(run(`${logItem(0, 2)} 3 enter`)), '1000', '10^3');
+  assert.equal(answer(run(`${logItem(1, 1)} 1 enter`)), '0', 'ln(1)');
+  assert.equal(answer(run(`${logItem(1, 2)} 0 enter`)), '1', 'e^0');
+});
+
+test('spec 4.6 — the math menu', () => {
+  assert.equal(answer(run(`3 ${mathItem(0, 3)} enter`)), '27', 'cube is postfix, like x2');
+  assert.equal(answer(run(`${mathItem(0, 4)} 6 4 enter`)), '4', 'cbrt(64)');
+  assert.equal(answer(run(`${mathItem(1, 1)} neg 7 enter`)), '7', 'abs(-7)');
+  assert.equal(answer(run(`${mathItem(1, 3)} 3 . 7 enter`)), '3', 'iPart(3.7)');
+  assert.equal(answer(run(`${mathItem(1, 4)} 3 . 7 5 enter`)), '0.75', 'fPart(3.75)');
+});
+
+test('spec 4.2 — the prb menu', () => {
+  assert.equal(answer(run(`8 ${prbItem(0, 1)} 3 enter`)), '336', '8 nPr 3');
+  assert.equal(answer(run(`5 2 ${prbItem(0, 2)} 5 enter`)), '2598960', '52 nCr 5');
+  assert.equal(answer(run(`5 ${prbItem(0, 3)} enter`)), '120', '5!');
+});
+
+/* -------------------------------------------------------------------------- */
+/* Decimal entry (spec 5.5, 7)                                                 */
+/* -------------------------------------------------------------------------- */
+
+test('spec 7 — a number typed with a decimal point comes back as a decimal', () => {
+  // These read as fractions before: 3.75 displayed "3 75/100" with the
+  // not-in-lowest-terms marker, because a typed decimal was converted to an
+  // exact rational and exact rationals display as fractions.
+  assert.equal(answer(run('3 . 7 5 enter')), '3.75');
+  assert.equal(answer(run('0 . 5 + 0 . 2 5 enter')), '0.75');
+  assert.equal(answer(run('2 . 5 + 1 enter')), '3.5');
+});
+
+test('spec 5.5 — exact values still stay exact', () => {
+  // The distinction is the input, not the arithmetic: integers and n/d
+  // fractions are exact, which is what the exact/decimal toggle is for.
+  assert.match(answer(run('1 ndiv 3 right enter')), /1\/3/, 'a keyed fraction');
+  assert.match(answer(run('2 * pi enter')), /2π/, 'pi multiples stay symbolic');
+});

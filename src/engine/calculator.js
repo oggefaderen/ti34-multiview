@@ -158,10 +158,10 @@ function applySelection(state, sel) {
       return applyModeChange(state, sel);
 
     case 'reset':
-      return sel.label === '2: Yes' || sel.label === 'Yes' ? initialState() : state;
+      return bareLabel(sel) === 'Yes' ? initialState() : state;
 
     case 'clearVar':
-      return sel.label && /Yes/.test(sel.label)
+      return bareLabel(sel) === 'Yes'
         ? copy(state, { vars: Object.fromEntries(VAR_CYCLE.map((v) => [v, null])) })
         : state;
 
@@ -198,9 +198,19 @@ function applyModeChange(state, sel) {
   });
 }
 
+/**
+ * A menu item's own text, without the selector prefix the screen shows
+ * ("1: log(", "C: Σxy"). menus.js carries both; `text` is the bare form, and
+ * matching the displayed `label` instead silently matched nothing — which is
+ * how every function menu came to insert nothing at all.
+ */
+function bareLabel(sel) {
+  return String(sel.text ?? sel.label ?? '').replace(/^[0-9A-H]:\s*/, '');
+}
+
 /** Menu items that insert something into the entry line (trig, log, math...). */
 function insertMenuFunction(state, sel) {
-  const node = FUNCTION_NODES[sel.label];
+  const node = FUNCTION_NODES[bareLabel(sel)];
   if (!node) return state; // not yet wired — see the TODO list at the bottom
   return copy(state, { entry: E.insertNode(state.entry, structuredClone(node), { classic: isClassic(state) }) });
 }
@@ -219,8 +229,20 @@ const FUNCTION_NODES = {
   'min(': fn('min'), 'max(': fn('max'),
   'remainder(': fn('remainder'),
   '³√(': fn('cbrt'), 'cbrt(': fn('cbrt'),
+  '^3 (cube)': { t: 'postfix', v: 'cube' },
   nPr: { t: 'op', v: 'nPr' }, nCr: { t: 'op', v: 'nCr' },
   '!': { t: 'postfix', v: 'factorial' },
+
+  // 2nd [angle] (spec 4.3). The unit modifiers are postfix: they say what
+  // unit the preceding value was written in, while the result still comes
+  // back in the current angle mode.
+  deg: { t: 'postfix', v: 'deg' },
+  "'": { t: 'postfix', v: 'min' },
+  '"': { t: 'postfix', v: 'sec' },
+  r: { t: 'postfix', v: 'rad' },
+  '►DMS': { t: 'postfix', v: 'dms_convert' },
+  'R►Pr(': fn('r2pr'), 'R►Pθ(': fn('r2ptheta'),
+  'P►Rx(': fn('p2rx'), 'P►Ry(': fn('p2ry'),
 };
 
 /* ------------------------------------------------------------------- home - */
