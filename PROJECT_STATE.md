@@ -104,7 +104,7 @@ reported as a one-line test.
 ## Build, run, test
 
 ```bash
-node --test test/                  # engine tests — the gate
+node --test 'test/**/*.test.js'                  # engine tests — the gate
 ./build.sh                         # -> dist/TI-34 MultiView.app
 open "dist/TI-34 MultiView.app"
 open src/ui/index.html             # the UI alone, in a browser

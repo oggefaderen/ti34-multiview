@@ -231,7 +231,7 @@ about calculator state, it goes in `DisplayModel` — the UI never reaches into
 
 ## Testing
 
-`node --test test/` — no dependencies, no config.
+`node --test 'test/**/*.test.js'` — no dependencies, no config.
 
 Every test is a key sequence plus an expected display. Write the test from
 `TI-34-SPEC.md` (cite the section in the test name), watch it fail, then

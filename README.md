@@ -96,7 +96,7 @@ Press `?` in the app for this table at any time.
 ## Tests
 
 ```bash
-node --test test/
+node --test 'test/**/*.test.js'
 ```
 
 The engine is pure — `press(state, key) -> state` and `render(state) -> display`
