@@ -4,7 +4,7 @@
 the end of every work session so that a new person — or a new agent with no
 conversation history — can continue without needing to reconstruct context.
 
-Last updated: 2026-09-10 · commit `04bba35` · branch `main`
+Last updated: 2026-09-10 · commit `92b6070` · branch `main` · CI green · 217 tests
 
 ---
 
@@ -36,33 +36,35 @@ to the real device.
 
 ### Done
 
-- Repo, CI (engine tests on Linux + a real `./build.sh` on macOS), README,
-  licence, `.gitignore`.
-- `docs/TI-34-SPEC.md` — full behavioural spec.
-- `docs/ARCHITECTURE.md` — module contracts.
-- `src/engine/tokens.js` — the 45-key table, verified free of duplicate ids and
-  grid collisions. **Single source of truth for the layout.**
-- `src/engine/value.js` + `src/engine/eos.js` — the math core. **125 tests
-  passing.** Exact rationals, pi-multiples, floats; the full 11-level EOS
-  precedence table. `eos.js`'s header comment pins the Node shapes that
-  `calculator.js` must produce — read it before writing that module.
-- `mac/main.swift` + `build.sh` — AppKit/WKWebView shell, universal binary,
-  ad-hoc signed `.app`.
+- Repo, CI (engine tests on Linux + a real `./build.sh` on macOS) — **green**.
+- `docs/TI-34-SPEC.md`, `docs/ARCHITECTURE.md` — the two governing documents.
+- `src/engine/tokens.js` — 45-key table, single source of truth for the layout.
+- `src/engine/value.js`, `src/engine/eos.js` — math core. Read the Node-shape
+  contract in `eos.js`'s header before touching anything that builds entries.
+- `src/engine/stats.js` — 1-var and 2-var statistics. The guidebook's
+  braking-distance dataset is a test and reproduces its published regression
+  to all ten displayed digits.
+- `src/engine/format.js` — Value -> Layout, notation modes, MathPrint.
+- `mac/main.swift`, `build.sh` — the app builds, launches and reports
+  `ui ready: 45 keys rendered` from inside the bundle.
+- `src/ui/index.html`, `src/ui/faceplate.css` — the faceplate replica. Palette
+  sampled from a production-unit photograph.
+
+**217 tests passing.**
 
 ### In progress
 
-| Unit | Files | Status |
-|---|---|---|
-| Faceplate | `src/ui/index.html`, `src/ui/faceplate.css` | in progress |
-| Display formatting | `src/engine/format.js` | in progress |
-| Statistics | `src/engine/stats.js` | in progress |
+| Unit | Files |
+|---|---|
+| Entry-line editing | `src/engine/entry.js` |
+| Menu model | `src/engine/menus.js` |
+| Renderer + keyboard input | `src/ui/render.js`, `src/ui/input.js` |
 
 ### Not started
 
 | Unit | Files | Depends on |
 |---|---|---|
-| State machine | `src/engine/calculator.js` | `eos.js`, `format.js` |
-| Render + input | `src/ui/render.js`, `src/ui/input.js` | `calculator.js`, faceplate DOM |
+| State machine | `src/engine/calculator.js` | everything above; it is the integration point |
 
 ---
 
@@ -171,7 +173,12 @@ firmware.
 
 ## Next action
 
-Once `format.js` lands, build `src/engine/calculator.js` — the state machine is
-the last engine piece and everything in the UI waits on it. Read the Node-shape
-contract in the header of `eos.js` first. Then wire `render.js` and `input.js`
-to the faceplate DOM.
+Build `src/engine/calculator.js`, the last piece. It owns `initialState`,
+`press` and `render`, and integrates entry.js, menus.js, eos.js, format.js and
+stats.js. Specifically it must own: the 2nd-key flag, the menu stack and acting
+on selections, history and previous-entry recall, `ans`, the memory variables
+and `sto►`, the `◄►` exact/decimal toggle state, `op1`/`op2` stored operations,
+`►simp`, and catching `CalcError` into the error display.
+
+Then hand `render.js` a real `DisplayModel` and confirm a full calculation
+works end to end in the app, by keyboard as well as by clicking.
