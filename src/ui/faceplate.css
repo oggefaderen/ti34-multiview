@@ -1,0 +1,646 @@
+/*
+ * TI-34 MultiView — faceplate stylesheet.
+ *
+ * Colours and proportions are taken from docs/TI-34-SPEC.md section 1 and
+ * cross-checked against production-unit photographs (Datamath Calculator
+ * Museum). See index.html for the DOM contract this file styles against.
+ *
+ * Everything scales off `--fp-unit`, a container-relative length set on
+ * `.calculator`, so the whole faceplate resizes cleanly when the window is
+ * resized — nothing here is pixel-pinned.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #12161c;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, #232a34 0%, #12161c 60%);
+  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+  color: #e6e6e6;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Palette                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.calculator {
+  /* Faceplate body */
+  --color-body-light: #146385;
+  --color-body: #0d5876;
+  --color-body-dark: #093f56;
+
+  /* Display surround */
+  --color-bezel: #0b2d4d;
+  --color-bezel-dark: #051a30;
+  --color-solar: #050505;
+
+  /* Key faces */
+  --color-key-white: #f5f3ec;
+  --color-key-white-shade: #d9d6cb;
+  --color-key-cream: #ece3d1;
+  --color-key-cream-shade: #cfc4ac;
+  --color-key-blue: #4fabd8;
+  --color-key-blue-shade: #3a8ab3;
+  --color-key-darkblue: #565f8c;
+  --color-key-darkblue-shade: #3e4568;
+
+  /* Text */
+  --color-text-dark: #232c33;
+  --color-text-light: #f4f6f7;
+  --color-label: #a9c3d3;
+  --color-label-dim: #6d8898;
+
+  /* Display */
+  --color-lcd-bg: #7f9686;
+  --color-lcd-bg-dark: #71886f;
+  --color-lcd-ink: #2b3c33;
+  --color-lcd-ink-dim: rgba(43, 60, 51, 0.32);
+
+  /* Scale unit: every internal measurement is a multiple of this.
+     clamp() ties it to the viewport so resizing the window rescales the
+     whole faceplate; container query units keep it correct even when the
+     calculator sits inside a smaller wrapper. */
+  --fp-unit: clamp(2.6px, 1.05cqw, 18px);
+
+  container-type: inline-size;
+  /* Fill whichever axis binds first, keeping the faceplate's aspect. The
+     second term is the width at which the calculator is exactly as tall as
+     the viewport allows, so a tall narrow window is width-bound and a short
+     wide one is height-bound — either way there is no dead space on the
+     limiting axis. The app window (mac/main.swift) is locked to this same
+     300:560 ratio, so in the app both terms land together. */
+  width: min(97vw, calc(97vh * 300 / 560));
+  aspect-ratio: 300 / 560;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, var(--color-body-light) 0%, var(--color-body) 45%, var(--color-body-dark) 100%);
+  border-radius: calc(var(--fp-unit) * 10);
+  padding: calc(var(--fp-unit) * 3);
+  box-shadow:
+    0 calc(var(--fp-unit) * 3) calc(var(--fp-unit) * 8) rgba(0, 0, 0, 0.55),
+    inset 0 0 0 calc(var(--fp-unit) * 0.6) rgba(255, 255, 255, 0.15);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Top cap                                                                 */
+/* ---------------------------------------------------------------------- */
+
+.top-cap {
+  flex: 0 0 12%;
+  background: var(--color-key-white);
+  border-radius: calc(var(--fp-unit) * 7) calc(var(--fp-unit) * 7) calc(var(--fp-unit) * 2) calc(var(--fp-unit) * 2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  font-size: calc(var(--fp-unit) * 2.6);
+  color: var(--color-body);
+  box-shadow: inset 0 calc(var(--fp-unit) * -1) calc(var(--fp-unit) * 2) rgba(0, 0, 0, 0.08);
+}
+
+.top-cap .brand-model {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.top-cap .brand-name {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  opacity: 0.75;
+  font-size: 0.85em;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Display bezel + LCD                                                    */
+/* ---------------------------------------------------------------------- */
+
+.display-bezel {
+  flex: 0 0 28%;
+  background: linear-gradient(180deg, var(--color-bezel) 0%, var(--color-bezel-dark) 100%);
+  border-radius: calc(var(--fp-unit) * 2);
+  margin-top: calc(var(--fp-unit) * -1.5);
+  padding: calc(var(--fp-unit) * 2) calc(var(--fp-unit) * 3) calc(var(--fp-unit) * 2.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.solar-strip {
+  width: 55%;
+  height: 14%;
+  margin-top: 2%;
+  background: var(--color-solar);
+  border-radius: calc(var(--fp-unit) * 3);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+
+.brand-row {
+  margin: 0.5em 0 0.35em;
+  font-size: calc(var(--fp-unit) * 1.5);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-light);
+  opacity: 0.85;
+  text-transform: uppercase;
+}
+
+/* The LCD itself. `render.js` owns everything inside #lcd-lines and
+   #annunciators; this file only lays out the frame. */
+.lcd {
+  flex: 1 1 auto;
+  width: 100%;
+  background: var(--color-lcd-bg);
+  background-image: linear-gradient(165deg, var(--color-lcd-bg) 0%, var(--color-lcd-bg-dark) 100%);
+  border-radius: calc(var(--fp-unit) * 1.4);
+  box-shadow:
+    inset 0 calc(var(--fp-unit) * 0.6) calc(var(--fp-unit) * 1.2) rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: calc(var(--fp-unit) * 1) calc(var(--fp-unit) * 1.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Courier New', ui-monospace, monospace;
+  color: var(--color-lcd-ink);
+}
+
+/* Annunciator row: 2ND FIX SCI DEG/RAD L1 L2 L3, busy, scroll arrows. */
+.annunciators {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: calc(var(--fp-unit) * 1.15);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--color-lcd-ink-dim);
+  margin-bottom: 0.35em;
+  white-space: nowrap;
+}
+
+.ind {
+  color: var(--color-lcd-ink-dim);
+  transition: color 0.1s ease;
+}
+
+.ind.lit {
+  color: var(--color-lcd-ink);
+}
+
+.ind-scroll-group {
+  margin-left: auto;
+  display: flex;
+  gap: 0.3em;
+}
+
+/* ---- Display line layout ------------------------------------------------ */
+
+.lcd-lines {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.15em;
+  font-size: calc(var(--fp-unit) * 2.55);
+  line-height: 1.18;
+}
+
+.lcd-line {
+  display: flex;
+  min-height: 1em;
+}
+
+.lcd-line.align-left {
+  justify-content: flex-start;
+}
+
+.lcd-line.align-right {
+  justify-content: flex-end;
+}
+
+.lcd-line.two-part {
+  justify-content: space-between;
+}
+
+.lcd-line .entry {
+  text-align: left;
+}
+
+.lcd-line .answer {
+  text-align: right;
+}
+
+/* MathPrint primitives used by the placeholder content below (and, later,
+   by render.js's real Layout renderer — see docs/ARCHITECTURE.md). */
+
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  font-size: 0.62em;
+  line-height: 1.05;
+  margin: 0 0.12em;
+  transform: translateY(0.05em);
+}
+
+.frac .num {
+  padding: 0 0.15em;
+  border-bottom: 0.09em solid currentColor;
+}
+
+.frac .den {
+  padding: 0 0.15em;
+}
+
+.radical {
+  display: inline-flex;
+  align-items: flex-start;
+  margin: 0 0.05em;
+}
+
+.radical .surd {
+  font-size: 1.05em;
+  transform: translateY(-0.05em);
+}
+
+.radical .radicand {
+  border-top: 0.09em solid currentColor;
+  padding: 0 0.1em 0 0.06em;
+  margin-left: -0.05em;
+}
+
+.pow {
+  display: inline-flex;
+  align-items: flex-start;
+  margin: 0 0.03em;
+}
+
+.pow .exp {
+  font-size: 0.6em;
+  line-height: 1;
+  transform: translateY(-0.35em);
+}
+
+.cursor-block {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.95em;
+  background: var(--color-lcd-ink);
+  animation: blink 1s steps(1) infinite;
+  vertical-align: text-bottom;
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Keypad                                                                  */
+/* ---------------------------------------------------------------------- */
+
+.keypad {
+  flex: 1 1 auto;
+  margin-top: calc(var(--fp-unit) * 2);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  gap: calc(var(--fp-unit) * 0.4) calc(var(--fp-unit) * 1.2);
+  position: relative;
+}
+
+/* Every key sits in a cell that reserves room above the button for its
+   printed 2nd-function legend, exactly as it is silkscreened on the real
+   faceplate. Placement comes straight from tokens.js via --col/--row. */
+.key-cell {
+  grid-column: var(--col) / span 1;
+  grid-row: var(--row) / span 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  min-height: 0;
+}
+
+.second-label {
+  color: var(--color-label);
+  font-size: calc(var(--fp-unit) * 1.15);
+  line-height: 1.1;
+  height: 2.2em;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  text-align: center;
+  padding-bottom: 0.15em;
+  white-space: nowrap;
+}
+
+.second-label.icon {
+  font-size: calc(var(--fp-unit) * 1.5);
+}
+
+.key {
+  appearance: none;
+  border: none;
+  width: 100%;
+  height: 100%;
+  min-height: calc(var(--fp-unit) * 5);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: calc(var(--fp-unit) * 1.9);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow:
+    0 calc(var(--fp-unit) * 0.5) 0 rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.05s ease, box-shadow 0.05s ease, filter 0.05s ease;
+}
+
+.key:active,
+.key.pressed {
+  transform: translateY(calc(var(--fp-unit) * 0.5));
+  box-shadow:
+    0 0 0 rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  filter: brightness(0.92);
+}
+
+.key--white {
+  background: linear-gradient(180deg, var(--color-key-white) 0%, var(--color-key-white-shade) 100%);
+  color: var(--color-text-dark);
+}
+
+.key--cream {
+  background: linear-gradient(180deg, var(--color-key-cream) 0%, var(--color-key-cream-shade) 100%);
+  color: var(--color-text-dark);
+  font-weight: 700;
+}
+
+.key--blue {
+  background: linear-gradient(180deg, var(--color-key-blue) 0%, var(--color-key-blue-shade) 100%);
+  color: var(--color-text-light);
+}
+
+.key--darkblue {
+  background: linear-gradient(180deg, var(--color-key-darkblue) 0%, var(--color-key-darkblue-shade) 100%);
+  color: var(--color-text-light);
+}
+
+/* Digits get a slightly larger, plainer numeral face. */
+.key--white {
+  font-size: calc(var(--fp-unit) * 2.2);
+  font-weight: 700;
+}
+
+/* ---- var key: stacked "x / y z t / a b c" glyph ------------------------ */
+
+.var-glyph {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.95;
+  font-size: calc(var(--fp-unit) * 1.15);
+  font-weight: 700;
+}
+
+.var-glyph .var-x {
+  font-size: 1.55em;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.var-glyph .var-upper,
+.var-glyph .var-lower {
+  letter-spacing: 0.05em;
+}
+
+/* ---- Arrow pad ----------------------------------------------------------
+ * tokens.js gives each of the four direction keys a distinct (row, col) so
+ * every key id is uniquely addressable in the 5x9 grid, but — per
+ * TI-34-SPEC.md section 1 — physically they are ONE pill-shaped rocker with
+ * up/down/left/right compass positions, not four quarter-cells. We render
+ * the grouping bezel spanning their shared 2x2 region, then lay the four
+ * hit-targets out by compass position (keyed off the stable `data-key` id,
+ * not off row/col) inside it. Row/col from tokens.js still decides which
+ * grid area the group occupies; only the fine placement within that area
+ * is id-based.
+ */
+
+.bezel.arrow-pad-bezel {
+  grid-column: 4 / span 2;
+  grid-row: 1 / span 2;
+  background: linear-gradient(180deg, var(--color-key-darkblue) 0%, var(--color-key-darkblue-shade) 100%);
+  border-radius: 999px;
+  margin: 10% 8%;
+  box-shadow:
+    inset 0 0 0 calc(var(--fp-unit) * 0.5) rgba(0, 0, 0, 0.25),
+    inset 0 calc(var(--fp-unit) * 0.6) calc(var(--fp-unit) * 1.2) rgba(0, 0, 0, 0.3),
+    0 calc(var(--fp-unit) * 0.4) 0 rgba(0, 0, 0, 0.28);
+  position: relative;
+  z-index: 0;
+}
+
+.bezel.arrow-pad-bezel::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34%;
+  height: 34%;
+  transform: translate(-50%, -50%);
+  background: var(--color-key-darkblue-shade);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.key-cell--arrow {
+  grid-column: 4 / span 2;
+  grid-row: 1 / span 2;
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.key-cell--arrow .second-label {
+  display: none;
+}
+
+.key-cell--arrow .key {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  min-height: 0;
+  background: transparent;
+  color: var(--color-text-light);
+  box-shadow: none;
+  font-size: calc(var(--fp-unit) * 2);
+}
+
+.key-cell--arrow .key:active,
+.key-cell--arrow .key.pressed {
+  filter: brightness(1.6);
+  transform: none;
+}
+
+.key-cell--arrow .key[data-key='up'] {
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.key-cell--arrow .key[data-key='down'] {
+  bottom: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.key-cell--arrow .key[data-key='left'] {
+  left: 2%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.key-cell--arrow .key[data-key='right'] {
+  right: 2%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ---- toggle / enter merged bezel ---------------------------------------
+ * <-> sits directly above enter in one dark recessed panel.
+ */
+
+.bezel.toggle-enter-bezel {
+  grid-column: 5 / span 1;
+  grid-row: 8 / span 2;
+  background: var(--color-bezel-dark);
+  border-radius: calc(var(--fp-unit) * 3);
+  margin: 4% 10%;
+  box-shadow: inset 0 calc(var(--fp-unit) * 0.8) calc(var(--fp-unit) * 1.6) rgba(0, 0, 0, 0.55);
+  z-index: 0;
+}
+
+.key-cell--toggle-enter {
+  z-index: 1;
+  padding: 6% 10%;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Keyboard-help overlay                                                   */
+/* ---------------------------------------------------------------------- */
+
+#keymap-help {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 12, 0.78);
+  z-index: 100;
+  font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+#keymap-help[hidden] {
+  display: none;
+}
+
+.keymap-panel {
+  background: #1b232c;
+  color: #e8ecef;
+  border-radius: 10px;
+  padding: 1.5em 1.75em;
+  max-width: 560px;
+  width: min(92vw, 560px);
+  max-height: 84vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.keymap-panel h2 {
+  margin: 0 0 0.15em;
+  font-size: 1.25em;
+}
+
+.keymap-panel .keymap-hint {
+  margin: 0 0 1em;
+  color: #9aa7b0;
+  font-size: 0.9em;
+}
+
+.keymap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+
+.keymap-table th,
+.keymap-table td {
+  text-align: left;
+  padding: 0.4em 0.6em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.keymap-table th {
+  color: #8fa6b3;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.78em;
+  letter-spacing: 0.04em;
+}
+
+.keymap-table kbd {
+  background: #303c47;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0.1em 0.45em;
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-size: 0.95em;
+}
+
+#help-toggle {
+  position: fixed;
+  right: calc(1em + env(safe-area-inset-right, 0px));
+  bottom: calc(1em + env(safe-area-inset-bottom, 0px));
+  width: 2.4em;
+  height: 2.4em;
+  border-radius: 50%;
+  border: none;
+  background: #1b232c;
+  color: #e8ecef;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  z-index: 90;
+}
+
+#help-toggle:hover {
+  background: #262f3a;
+}

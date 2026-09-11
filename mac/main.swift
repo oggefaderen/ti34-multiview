@@ -12,11 +12,12 @@
 import AppKit
 import WebKit
 
-// Placeholder faceplate size (width/height ratio ~0.46, approximating the
-// physical TI-34 MultiView). Adjust once src/ui's real faceplate CSS
-// dimensions are known — the window is kept locked to this aspect ratio
-// (contentAspectRatio below) so resizing it larger stays in proportion.
-private let baseSize = NSSize(width: 400, height: 860)
+// Matches the faceplate's own 300:560 aspect, declared on `.calculator` in
+// src/ui/faceplate.css. The two must agree: the CSS sizes the faceplate to
+// whichever axis binds first, so a window of any other shape would leave a
+// dead margin down one side. The window is locked to this ratio
+// (contentAspectRatio below), so resizing stays in proportion.
+private let baseSize = NSSize(width: 450, height: 840)
 
 /// WKWebView that never shows a right-click context menu and never lets the
 /// user drag-select text — an appliance, not a page. Suppressing the menu has
@@ -31,6 +32,8 @@ private final class ApplianceWebView: WKWebView {
 // Custom scheme the UI is served under (see BundleSchemeHandler below).
 private let resourceScheme = "ti34resource"
 private let resourceHost = "app"
+// Name of the JS -> native message channel used for diagnostics (see below).
+private let diagnosticsChannel = "diagnostics"
 
 /// Serves files out of Resources/src under a custom URL scheme instead of
 /// `file://`.
@@ -122,6 +125,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDe
 
         let contentController = WKUserContentController()
         contentController.addUserScript(Self.applianceScript)
+        contentController.addUserScript(Self.diagnosticsScript)
+        contentController.add(self, name: diagnosticsChannel)
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = contentController
         configuration.setURLSchemeHandler(schemeHandler, forURLScheme: resourceScheme)
@@ -242,6 +247,49 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDe
         injectionTime: .atDocumentStart,
         forMainFrameOnly: true
     )
+
+    // MARK: - Diagnostics
+    //
+    // A JavaScript error inside a bundled WKWebView is completely invisible:
+    // there is no console to open, and a page that fails to load its modules
+    // just renders as a blank faceplate with no clue why. Forwarding errors
+    // to the system log makes that debuggable from a terminal with
+    //
+    //     log show --last 2m --predicate 'process == "TI-34 MultiView"'
+    //
+    // The "ui ready" line doubles as confirmation that the ES modules
+    // actually resolved over the ti34resource:// scheme.
+
+    private static let diagnosticsScript = WKUserScript(
+        source: """
+        (function () {
+            var send = function (kind, text) {
+                try {
+                    window.webkit.messageHandlers.diagnostics.postMessage(kind + ': ' + text);
+                } catch (e) { /* handler absent outside the app — ignore */ }
+            };
+            window.addEventListener('error', function (e) {
+                send('js error', (e.message || 'unknown') + ' @ ' + (e.filename || '?') + ':' + (e.lineno || 0));
+            });
+            window.addEventListener('unhandledrejection', function (e) {
+                send('unhandled rejection', String((e.reason && e.reason.message) || e.reason));
+            });
+            window.addEventListener('load', function () {
+                send('ui ready', document.querySelectorAll('[data-key]').length + ' keys rendered');
+            });
+        })();
+        """,
+        injectionTime: .atDocumentStart,
+        forMainFrameOnly: true
+    )
+}
+
+extension AppDelegate: WKScriptMessageHandler {
+    func userContentController(_ controller: WKUserContentController,
+                               didReceive message: WKScriptMessage) {
+        guard message.name == diagnosticsChannel else { return }
+        NSLog("[ti34] %@", String(describing: message.body))
+    }
 }
 
 private let app = NSApplication.shared

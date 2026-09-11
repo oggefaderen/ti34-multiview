@@ -101,7 +101,26 @@ cp -R "$SRC_UI/." "$RESOURCES/src/ui/"
 cp -R "$SRC_ENGINE/." "$RESOURCES/src/engine/"
 
 echo "==> Ad-hoc code signing"
-codesign --force -s - "$APP"
+# Best-effort, deliberately not fatal.
+#
+# codesign refuses to sign a bundle carrying extended attributes ("resource
+# fork, Finder information, or similar detritus not allowed"). `xattr -cr`
+# clears the ordinary ones, but on macOS 15+ the system stamps
+# com.apple.provenance on files created by some sandboxed processes and that
+# one cannot be removed — so in those environments this step can never
+# succeed, no matter how the bundle is assembled.
+#
+# That is survivable: swiftc already ad-hoc signs the executable at link
+# time, which is what macOS actually requires to run a local arm64 binary.
+# The app launches and works without a bundle-level signature. So warn and
+# carry on rather than failing a build that produced a working app.
+xattr -cr "$APP" 2>/dev/null || true
+if codesign --force -s - "$APP" 2>/dev/null; then
+  echo "    signed"
+else
+  echo "    note: bundle signing skipped (extended attributes present)."
+  echo "    The executable is linker-signed and the app runs normally."
+fi
 
 echo ""
 echo "Built: $APP"

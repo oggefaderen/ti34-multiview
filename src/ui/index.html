@@ -1,0 +1,224 @@
+<!--
+  TI-34 MultiView — faceplate shell.
+
+  ============================================================================
+  DOM CONTRACT (read this before wiring input.js or render.js)
+  ============================================================================
+
+  KEYS (input.js hooks in, this file builds out):
+    - Every physical key is a `<button class="key key--<face>" data-key="<id>">`
+      where `<id>` is exactly a `Key.id` from src/engine/tokens.js and
+      `<face>` is exactly `Key.face` ('white' | 'cream' | 'blue' | 'darkblue').
+    - Query one key:        document.querySelector('[data-key="enter"]')
+    - Query all keys:       document.querySelectorAll('.key')
+    - input.js adds/removes the class `.pressed` on a key's button element
+      when the corresponding physical/mapped key is struck; faceplate.css
+      already styles `.pressed` identically to `:active`.
+    - The four arrow-pad keys (`up`/`down`/`left`/`right`) and the two
+      merged-bezel keys (`toggle`/`enter`) are ordinary buttons with the same
+      `data-key` contract — nothing special is needed to address them.
+
+  DISPLAY (render.js replaces the placeholder content, but should reuse
+  these container ids and the Layout primitives defined in faceplate.css):
+    - #lcd                   the screen surface (DisplayModel as a whole)
+    - #annunciators          indicator row; each indicator is `#ind-<name>`,
+                              a leaf element that gets a `.lit` class toggled
+                              when DisplayModel.indicators.<name> is true:
+                                #ind-second #ind-fix #ind-sci #ind-deg #ind-rad
+                                #ind-l1 #ind-l2 #ind-l3 #ind-busy
+                                #ind-scroll-up #ind-scroll-down
+                                #ind-scroll-left #ind-scroll-right
+    - #lcd-lines              container for up to 4 `.lcd-line` rows
+                              (DisplayModel.lines[]); render.js should clear
+                              and rebuild this container's children each
+                              render — nothing outside it depends on what's
+                              inside.
+    - `.lcd-line` variants: `.align-left`, `.align-right`, `.two-part`
+      (entry+answer sharing one row) — pick per `Line.align`.
+    - MathPrint building blocks (mirror format.js's `Layout` tree, see
+      docs/ARCHITECTURE.md): `.frac > .num + .den`, `.radical > .surd +
+      .radicand`, `.pow > .base + .exp`. Compose these to render any Layout
+      node; row/base content is plain text or nested spans.
+    - #display-cursor is not a fixed element — render.js should place a
+      `.cursor-block` at DisplayModel.cursor's position when present.
+    - #display-menu is reserved (currently absent) for when
+      DisplayModel.menu is non-null; render.js may insert a menu panel here.
+
+  HELP OVERLAY:
+    - #keymap-help            hidden by default (`hidden` attribute); toggle
+                              by removing/adding that attribute.
+    - #help-toggle            visible "?" button; input.js should wire both
+                              a click listener on this and a `?` keydown
+                              listener to toggle #keymap-help.
+
+  Nothing in this file computes calculator behaviour. It only (a) builds the
+  key grid from tokens.js, and (b) lays out a static display mock so the
+  MathPrint hard cases can be eyeballed before render.js exists.
+-->
+<title>TI-34 MultiView</title>
+<link rel="stylesheet" href="faceplate.css" />
+
+<div class="calculator" id="calculator">
+  <div class="top-cap">
+    <span class="brand-model">TI-34</span>
+    <span class="brand-name">MultiView</span>
+  </div>
+
+  <div class="display-bezel">
+    <div class="solar-strip" aria-hidden="true"></div>
+    <div class="brand-row">Texas Instruments</div>
+
+    <div id="lcd" class="lcd" role="img" aria-label="calculator display">
+      <div id="annunciators" class="annunciators">
+        <span class="ind" id="ind-second">2ND</span>
+        <span class="ind" id="ind-fix">FIX</span>
+        <span class="ind" id="ind-sci">SCI</span>
+        <span class="ind lit" id="ind-deg">DEG</span>
+        <span class="ind" id="ind-rad">RAD</span>
+        <span class="ind" id="ind-l1">L1</span>
+        <span class="ind" id="ind-l2">L2</span>
+        <span class="ind" id="ind-l3">L3</span>
+        <span class="ind" id="ind-busy" title="busy">&#8987;</span>
+        <span class="ind-scroll-group">
+          <span class="ind lit" id="ind-scroll-up">&#9650;</span>
+          <span class="ind" id="ind-scroll-down">&#9660;</span>
+          <span class="ind" id="ind-scroll-left">&#9664;</span>
+          <span class="ind" id="ind-scroll-right">&#9654;</span>
+        </span>
+      </div>
+
+      <!--
+        STATIC PLACEHOLDER CONTENT — render.js will replace everything
+        inside #lcd-lines with real DisplayModel output. Kept here only so
+        the MathPrint hard cases (stacked fraction, superscript, radical
+        with vinculum, entry/answer pairing on one line vs. two) can be
+        checked visually against faceplate.css before render.js exists.
+      -->
+      <div id="lcd-lines" class="lcd-lines">
+        <div class="lcd-line align-left">
+          <span class="radical"><span class="surd">&#8730;</span><span class="radicand">8</span></span>
+          <span>&nbsp;+&nbsp;</span>
+          <span class="frac"><span class="num">1</span><span class="den">2</span></span>
+          <span>&nbsp;+&nbsp;</span>
+          <span class="pow"><span class="base">3</span><span class="exp">2</span></span>
+        </div>
+        <div class="lcd-line align-right">11.32842712</div>
+        <div class="lcd-line two-part">
+          <span class="entry">5&#215;9</span>
+          <span class="answer">45</span>
+        </div>
+        <div class="lcd-line align-left">
+          <span class="cursor-block"></span>
+        </div>
+      </div>
+      <!-- END STATIC PLACEHOLDER CONTENT -->
+    </div>
+  </div>
+
+  <div class="keypad" id="keypad">
+    <!-- populated below by iterating KEYS from tokens.js -->
+  </div>
+</div>
+
+<button id="help-toggle" type="button" aria-haspopup="dialog" aria-controls="keymap-help" title="Keyboard map (?)">?</button>
+
+<div id="keymap-help" hidden role="dialog" aria-label="Keyboard map">
+  <div class="keymap-panel">
+    <h2>Keyboard map</h2>
+    <p class="keymap-hint">Press <kbd>?</kbd> at any time to toggle this.</p>
+    <table class="keymap-table">
+      <thead>
+        <tr><th>Key</th><th>Calculator</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><kbd>0</kbd>&#8211;<kbd>9</kbd> <kbd>.</kbd></td><td>digits and decimal point</td></tr>
+        <tr><td><kbd>+</kbd> <kbd>-</kbd> <kbd>*</kbd> <kbd>/</kbd></td><td>&#247; &#215; &#8722; +</td></tr>
+        <tr><td><kbd>(</kbd> <kbd>)</kbd></td><td>parentheses</td></tr>
+        <tr><td><kbd>Enter</kbd> or <kbd>=</kbd></td><td><code>enter</code></td></tr>
+        <tr><td><kbd>Esc</kbd></td><td><code>clear</code></td></tr>
+        <tr><td><kbd>Backspace</kbd></td><td><code>delete</code></td></tr>
+        <tr><td>arrows</td><td>the arrow pad</td></tr>
+        <tr><td><kbd>Tab</kbd></td><td><code>2nd</code></td></tr>
+        <tr><td><kbd>\</kbd></td><td><code>&#9668;&#9658;</code> exact/decimal toggle</td></tr>
+        <tr><td><kbd>s</kbd> <kbd>c</kbd> <kbd>t</kbd></td><td>sin, cos, tan</td></tr>
+        <tr><td><kbd>S</kbd> <kbd>C</kbd> <kbd>T</kbd></td><td>sin&#8315;&#185;, cos&#8315;&#185;, tan&#8315;&#185;</td></tr>
+        <tr><td><kbd>l</kbd> / <kbd>n</kbd></td><td>log / ln</td></tr>
+        <tr><td><kbd>^</kbd></td><td>power</td></tr>
+        <tr><td><kbd>r</kbd></td><td>&#8730;</td></tr>
+        <tr><td><kbd>q</kbd></td><td>x&#178;</td></tr>
+        <tr><td><kbd>p</kbd></td><td>&#960;</td></tr>
+        <tr><td><kbd>e</kbd></td><td>&#215;10&#8319;</td></tr>
+        <tr><td><kbd>f</kbd></td><td>n/d</td></tr>
+        <tr><td><kbd>F</kbd></td><td>U n/d</td></tr>
+        <tr><td><kbd>%</kbd></td><td>percent</td></tr>
+        <tr><td><kbd>m</kbd></td><td>mode</td></tr>
+        <tr><td><kbd>v</kbd></td><td>memory variable</td></tr>
+        <tr><td><kbd>x</kbd></td><td>sto&#9658;</td></tr>
+        <tr><td><kbd>a</kbd></td><td>ans</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script type="module">
+  import { KEYS, CONTRAST_KEYS } from '../engine/tokens.js';
+
+  const keypad = document.getElementById('keypad');
+
+  // These two groupings are presentational only (see faceplate.css for the
+  // "why"): tokens.js still owns every key's row/col and face; this file
+  // never redefines the layout, it only decides how a handful of ids are
+  // *drawn* once placed.
+  const ARROW_IDS = new Set(['up', 'down', 'left', 'right']);
+  const TOGGLE_ENTER_IDS = new Set(['toggle', 'enter']);
+
+  // Decorative grouping bezels, appended first so real keys paint on top.
+  const arrowBezel = document.createElement('div');
+  arrowBezel.className = 'bezel arrow-pad-bezel';
+  keypad.appendChild(arrowBezel);
+
+  const toggleEnterBezel = document.createElement('div');
+  toggleEnterBezel.className = 'bezel toggle-enter-bezel';
+  keypad.appendChild(toggleEnterBezel);
+
+  for (const key of KEYS) {
+    const cell = document.createElement('div');
+    cell.className = 'key-cell';
+    cell.style.setProperty('--col', key.col);
+    cell.style.setProperty('--row', key.row);
+    cell.dataset.keyId = key.id;
+    if (ARROW_IDS.has(key.id)) cell.classList.add('key-cell--arrow');
+    if (TOGGLE_ENTER_IDS.has(key.id)) cell.classList.add('key-cell--toggle-enter');
+
+    const secondLabel = document.createElement('span');
+    secondLabel.className = 'second-label';
+    if (CONTRAST_KEYS.has(key.id)) secondLabel.classList.add('icon');
+    if (key.second) secondLabel.textContent = key.second;
+    cell.appendChild(secondLabel);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `key key--${key.face}`;
+    button.dataset.key = key.id;
+    button.setAttribute(
+      'aria-label',
+      key.second ? `${key.label} (2nd: ${key.second})` : key.label
+    );
+
+    if (key.id === 'var') {
+      // "x y z t a b c" is printed as a stacked glyph on the real unit:
+      // italic x, with "y z t" above and "a b c" below.
+      button.innerHTML =
+        '<span class="var-glyph">' +
+        '<span class="var-upper">y z t</span>' +
+        '<span class="var-x">x</span>' +
+        '<span class="var-lower">a b c</span>' +
+        '</span>';
+    } else {
+      button.textContent = key.label;
+    }
+
+    cell.appendChild(button);
+    keypad.appendChild(cell);
+  }
+</script>
