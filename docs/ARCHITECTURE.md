@@ -172,7 +172,17 @@ The entry line is a tree, because MathPrint fractions and radicals nest.
  */
 ```
 
-The cursor is a **path** into this tree: `{path: number[], offset: number}`.
+The cursor is a **path** into this tree:
+
+```js
+cursor = { path: [{ index, slot }, ...], offset }
+```
+
+Each step selects the node at `index` in the current list and descends into
+its named child list `slot` ('num', 'den', 'arg', 'exp', ...); `offset` is the
+insertion point in the list the path lands on. An earlier sketch had `path` as
+`number[]`, which cannot work: a fraction has two child lists, so an index
+alone cannot say whether the cursor is in the numerator or the denominator.
 `DOWN` inside a fraction moves numerator -> denominator (spec 5.5); that is a
 cursor move, not a new node.
 
