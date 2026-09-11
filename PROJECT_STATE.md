@@ -4,7 +4,7 @@
 the end of every work session so that a new person — or a new agent with no
 conversation history — can continue without needing to reconstruct context.
 
-Last updated: 2026-09-10 · commit `5828782` · branch `main`
+Last updated: 2026-09-10 · commit `04bba35` · branch `main`
 
 ---
 
@@ -36,28 +36,31 @@ to the real device.
 
 ### Done
 
-- Repo, CI (`node --test` on Linux + a real `./build.sh` on macOS), README,
-  licence note, `.gitignore`.
+- Repo, CI (engine tests on Linux + a real `./build.sh` on macOS), README,
+  licence, `.gitignore`.
 - `docs/TI-34-SPEC.md` — full behavioural spec.
 - `docs/ARCHITECTURE.md` — module contracts.
-- `src/engine/tokens.js` — the 45-key table, verified for duplicate ids and
-  grid collisions. **Single source of truth for the layout**: the UI builds the
-  faceplate by iterating this, and the engine takes key ids from it.
+- `src/engine/tokens.js` — the 45-key table, verified free of duplicate ids and
+  grid collisions. **Single source of truth for the layout.**
+- `src/engine/value.js` + `src/engine/eos.js` — the math core. **125 tests
+  passing.** Exact rationals, pi-multiples, floats; the full 11-level EOS
+  precedence table. `eos.js`'s header comment pins the Node shapes that
+  `calculator.js` must produce — read it before writing that module.
+- `mac/main.swift` + `build.sh` — AppKit/WKWebView shell, universal binary,
+  ad-hoc signed `.app`.
 
 ### In progress
 
 | Unit | Files | Status |
 |---|---|---|
-| Math core | `src/engine/value.js`, `src/engine/eos.js` | in progress |
-| macOS shell | `mac/main.swift`, `build.sh` | in progress |
 | Faceplate | `src/ui/index.html`, `src/ui/faceplate.css` | in progress |
+| Display formatting | `src/engine/format.js` | in progress |
+| Statistics | `src/engine/stats.js` | in progress |
 
 ### Not started
 
 | Unit | Files | Depends on |
 |---|---|---|
-| Display formatting | `src/engine/format.js` | `value.js` |
-| Statistics | `src/engine/stats.js` | `value.js` |
 | State machine | `src/engine/calculator.js` | `eos.js`, `format.js` |
 | Render + input | `src/ui/render.js`, `src/ui/input.js` | `calculator.js`, faceplate DOM |
 
@@ -115,6 +118,26 @@ Command Line Tools only: `xcodebuild` does not exist, so the app is compiled
 with `swiftc` directly against the CLT SDK (which does ship AppKit and WebKit).
 Do not introduce an `.xcodeproj`.
 
+### Two traps that cost real time to find
+
+**ES modules will not load over `file://`.** WebKit (and every browser)
+CORS-checks `<script type="module">` fetches, and a `file://` origin can never
+satisfy that check — not even for an import from the *same* directory. A
+classic non-module `<script src>` to the identical file succeeds, which makes
+this confusing to diagnose. Consequences:
+
+- The app serves its bundle over a custom `ti34resource://` scheme handler in
+  `main.swift` rather than using `loadFileURL(_:allowingReadAccessTo:)`. That
+  API does grant filesystem read access, but it does not change the origin, so
+  it does not fix the module fetch. Don't "simplify" it back.
+- To open the UI in a browser you must serve it: `python3 -m http.server 8000`,
+  then `http://localhost:8000/src/ui/index.html`. Double-clicking the file
+  silently renders a dead page.
+
+**`node --test test/` fails on Node 22.** A bare directory argument is resolved
+as a *module* path (`Cannot find module .../test`). Use the glob form,
+`node --test 'test/**/*.test.js'`, which is what `npm test` and CI now run.
+
 There are no third-party dependencies anywhere — no npm packages, no Electron,
 no CDN links. Keep it that way; it is why the thing builds from a clean
 checkout with one command.
@@ -148,6 +171,7 @@ firmware.
 
 ## Next action
 
-Finish the three in-progress units, then build `format.js` and `stats.js`
-against `value.js`, then `calculator.js`, then wire `render.js` and `input.js`
+Once `format.js` lands, build `src/engine/calculator.js` — the state machine is
+the last engine piece and everything in the UI waits on it. Read the Node-shape
+contract in the header of `eos.js` first. Then wire `render.js` and `input.js`
 to the faceplate DOM.
