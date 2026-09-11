@@ -81,6 +81,8 @@ cat > "$CONTENTS/Info.plist" <<PLIST
     <string>$APP_NAME</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleShortVersionString</key>
     <string>$VERSION</string>
     <key>CFBundleVersion</key>
@@ -94,6 +96,15 @@ cat > "$CONTENTS/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+echo "==> Copying the app icon"
+if [ -f assets/AppIcon.icns ]; then
+  cp assets/AppIcon.icns "$RESOURCES/AppIcon.icns"
+else
+  # Not fatal: the app runs fine with the generic icon. Regenerate with
+  # tools/make-icon.sh (needs Google Chrome).
+  echo "    note: assets/AppIcon.icns missing — using the default icon."
+fi
 
 echo "==> Copying src/ui and src/engine into Resources"
 mkdir -p "$RESOURCES/src/ui" "$RESOURCES/src/engine"

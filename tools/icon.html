@@ -1,0 +1,28 @@
+<style>
+  html,body{margin:0;background:transparent}
+  .wrap{width:1024px;height:1024px;display:flex;align-items:center;justify-content:center}
+  .icon{
+    width:880px;height:880px;border-radius:200px;
+    background:linear-gradient(160deg,#1d86b4 0%,#0d5876 46%,#062f42 100%);
+    box-shadow:inset 0 -20px 44px rgba(0,0,0,.38), inset 0 16px 32px rgba(255,255,255,.20);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:54px;
+  }
+  .lcd{
+    width:636px;height:404px;border-radius:40px;
+    background:linear-gradient(165deg,#adc3a6 0%,#88a08d 60%,#748c79 100%);
+    box-shadow:inset 0 12px 28px rgba(0,0,0,.40);
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#16241c;
+  }
+  .frac{display:flex;flex-direction:column;align-items:center;line-height:.92;font-size:168px;font-weight:700}
+  .bar{width:196px;height:17px;background:#16241c;border-radius:9px;margin:20px 0}
+  .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:30px}
+  .k{width:122px;height:80px;border-radius:40px;background:linear-gradient(180deg,#66bce4,#3a8ab3);
+     box-shadow:0 5px 0 rgba(0,0,0,.28)}
+  .k.w{background:linear-gradient(180deg,#f8f6ef,#d5d2c6)}
+  .k.d{background:linear-gradient(180deg,#6b76a8,#3e4568)}
+</style>
+<div class="wrap"><div class="icon">
+  <div class="lcd"><div class="frac"><span>3</span><span class="bar"></span><span>4</span></div></div>
+  <div class="keys"><div class="k"></div><div class="k w"></div><div class="k w"></div><div class="k d"></div></div>
+</div></div>
