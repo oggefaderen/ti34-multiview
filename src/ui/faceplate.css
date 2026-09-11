@@ -60,8 +60,12 @@ body {
   /* Text */
   --color-text-dark: #232c33;
   --color-text-light: #f4f6f7;
-  --color-label: #a9c3d3;
-  --color-label-dim: #6d8898;
+  /* The 2nd-function legends. On the device these are light grey/white
+     printing on a dark teal body and are easy to read at arm's length; at
+     screen sizes they need to be near-white with a touch of weight, or they
+     disappear into the faceplate. */
+  --color-label: #e4eff6;
+  --color-label-dim: #9ab3c2;
 
   /* Display */
   --color-lcd-bg: #7f9686;
@@ -351,8 +355,11 @@ body {
 
 .second-label {
   color: var(--color-label);
-  font-size: calc(var(--fp-unit) * 1.15);
+  font-size: calc(var(--fp-unit) * 1.5);
+  font-weight: 600;
+  letter-spacing: 0.01em;
   line-height: 1.1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
   height: 2.2em;
   display: flex;
   align-items: flex-end;
@@ -363,7 +370,7 @@ body {
 }
 
 .second-label.icon {
-  font-size: calc(var(--fp-unit) * 1.5);
+  font-size: calc(var(--fp-unit) * 1.9);
 }
 
 .key {

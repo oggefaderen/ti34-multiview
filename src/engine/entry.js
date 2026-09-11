@@ -61,9 +61,30 @@ export function emptyEntry() {
   return { nodes: [], cursor: { path: [], offset: 0 }, insertMode: false };
 }
 
-/** The Node array for eos.js. */
+/** The Node array for eos.js, with digit runs merged back together. */
 export function toNodes(entry) {
-  return entry.nodes;
+  return mergeNums(entry.nodes);
+}
+
+/**
+ * The same nodes with a marker character spliced in at the cursor position.
+ *
+ * The renderer needs to know where the cursor falls *within* the rendered
+ * text — including inside a fraction, where no column number would mean
+ * anything. Splicing the marker in before merging puts it at exactly the
+ * right character offset, and the renderer swaps it for the cursor element.
+ */
+export function toNodesWithMarker(entry, mark) {
+  const nodes = structuredClone(entry.nodes);
+  let list = nodes;
+  for (const step of entry.cursor.path) {
+    const node = list[step.index];
+    if (!node || !Array.isArray(node[step.slot])) return mergeNums(nodes);
+    list = node[step.slot];
+  }
+  const at = Math.min(Math.max(entry.cursor.offset, 0), list.length);
+  list.splice(at, 0, { t: 'num', v: mark });
+  return mergeNums(nodes);
 }
 
 export function isEmpty(entry) {
@@ -179,7 +200,7 @@ export function nodeCount(entry) {
       for (const slot of slotsOf(node)) walk(node[slot]);
     }
   };
-  walk(entry.nodes);
+  walk(toNodes(entry));
   return n;
 }
 
@@ -243,21 +264,51 @@ export function insertDigit(entry, ch) {
 
   const next = clone(entry);
   const list = listAt(next);
-  const prev = next.cursor.offset > 0 ? list[next.cursor.offset - 1] : null;
 
-  if (prev && prev.t === 'num') {
-    // A number may hold only one decimal point.
-    if (ch === '.' && prev.v.includes('.')) return entry;
-    prev.v += ch;
-  } else {
-    list.splice(next.cursor.offset, 0, { t: 'num', v: ch === '.' ? '.' : ch });
-    next.cursor.offset += 1;
-  }
+  // Each typed character is its own node, so the cursor can move through a
+  // number one digit at a time — pressing LEFT inside "2323" must land
+  // between digits, not skip the whole number. `toNodes` merges the runs back
+  // into the single {t:'num'} node eos.js expects.
+  if (ch === '.' && runHasDecimalPoint(list, next.cursor.offset)) return entry;
+
+  list.splice(next.cursor.offset, 0, { t: 'num', v: ch });
+  next.cursor.offset += 1;
 
   if (measure(next.nodes) > MAX_ENTRY_LENGTH) {
     throw new CalcError('EQUATION LENGTH');
   }
   return next;
+}
+
+/** Does the contiguous run of digit nodes around `at` already hold a '.'? */
+function runHasDecimalPoint(list, at) {
+  for (let i = at - 1; i >= 0 && list[i] && list[i].t === 'num'; i--) {
+    if (list[i].v.includes('.')) return true;
+  }
+  for (let i = at; i < list.length && list[i] && list[i].t === 'num'; i++) {
+    if (list[i].v.includes('.')) return true;
+  }
+  return false;
+}
+
+/**
+ * Merge runs of adjacent digit nodes into the single number node eos.js
+ * expects. Editing keeps them separate (one per character) so the cursor can
+ * sit between digits; evaluation and formatting want them joined.
+ */
+function mergeNums(nodes) {
+  const out = [];
+  for (const node of nodes) {
+    const merged = { ...node };
+    for (const slot of slotsOf(node)) merged[slot] = mergeNums(node[slot]);
+    const prev = out[out.length - 1];
+    if (prev && prev.t === 'num' && merged.t === 'num') {
+      out[out.length - 1] = { t: 'num', v: prev.v + merged.v };
+    } else {
+      out.push(merged);
+    }
+  }
+  return out;
 }
 
 /**
@@ -282,15 +333,19 @@ export function startFraction(entry, { mixed = false, classic = false } = {}) {
   assertClassicFractionContent(next, { t: mixed ? 'mixed' : 'frac' }, classic);
 
   // Adopt a preceding number as the numerator (or as the whole part).
+  // Adopt the whole contiguous number, not just its last digit.
   let adopted = null;
   if (prev && prev.t === 'num') {
-    adopted = list.splice(next.cursor.offset - 1, 1)[0];
-    next.cursor.offset -= 1;
+    let start = next.cursor.offset;
+    while (start > 0 && list[start - 1] && list[start - 1].t === 'num') start--;
+    const run = list.splice(start, next.cursor.offset - start);
+    next.cursor.offset = start;
+    adopted = run;
   }
 
   const node = mixed
-    ? { t: 'mixed', whole: adopted ? [adopted] : [], num: [], den: [] }
-    : { t: 'frac', num: adopted ? [adopted] : [], den: [] };
+    ? { t: 'mixed', whole: adopted ?? [], num: [], den: [] }
+    : { t: 'frac', num: adopted ?? [], den: [] };
 
   list.splice(next.cursor.offset, 0, node);
 
@@ -338,11 +393,7 @@ export function backspace(entry) {
   const list = listAt(next);
 
   if (next.cursor.offset > 0) {
-    const prev = list[next.cursor.offset - 1];
-    if (prev.t === 'num' && prev.v.length > 1) {
-      prev.v = prev.v.slice(0, -1);
-      return next;
-    }
+    // One node is one typed character now, so this deletes exactly one.
     list.splice(next.cursor.offset - 1, 1);
     next.cursor.offset -= 1;
     return next;

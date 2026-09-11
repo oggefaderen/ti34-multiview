@@ -25,11 +25,19 @@ function run(seq, from = initialState()) {
   return keys(seq).reduce(press, from);
 }
 
-/** Flatten a Layout to plain text for assertions. */
+/**
+ * Flatten a Layout to plain text for assertions.
+ *
+ * The engine splices a NUL marker into the entry line to say where the cursor
+ * goes (render.js swaps it for the cursor element), so strip it here — it is
+ * a position marker, not content.
+ */
+const CURSOR_MARK = '\u0000';
+
 function flat(layout) {
   if (!layout) return '';
   switch (layout.t) {
-    case 'text': return layout.text;
+    case 'text': return layout.text.split(CURSOR_MARK).join('');
     case 'row': return (layout.items || []).map(flat).join('');
     case 'frac': return `${flat(layout.num)}/${flat(layout.den)}`;
     case 'sup': return `${flat(layout.base)}^${flat(layout.sup)}`;

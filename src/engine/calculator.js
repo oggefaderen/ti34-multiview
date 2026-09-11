@@ -588,6 +588,20 @@ function pressOp(state, which) {
 
 const text = (s) => ({ t: 'text', text: s });
 
+/**
+ * Where the cursor goes, marked in the content itself.
+ *
+ * The cursor sits at a position in the entry *tree*, but the display is a
+ * rendered Layout — and inside a MathPrint fraction there is no single
+ * "column" to point at. Rather than have the renderer and the engine both
+ * reimplement the same flattening (and drift apart), the engine splices this
+ * marker character in at the cursor position and the renderer swaps it for
+ * the cursor element wherever it lands. It is carried on the DisplayModel as
+ * `cursor.marker` so the UI never has to import anything from the engine.
+ */
+const CURSOR_MARK = '\u0000';
+
+
 function valueNode(value) {
   // Paste a stored value back as a literal the editor can handle.
   return { t: 'num', v: String(toNumber(value)) };
@@ -630,7 +644,11 @@ export function render(state) {
 
   // The live entry line, unless a previous entry is highlighted.
   if (state.historyCursor == null) {
-    lines.push({ layout: F.formatEntry(E.toNodes(state.entry), mode), align: 'left', current: true });
+    lines.push({
+      layout: F.formatEntry(E.toNodesWithMarker(state.entry, CURSOR_MARK), mode),
+      align: 'left',
+      current: true,
+    });
   }
 
   return {
@@ -648,11 +666,12 @@ export function render(state) {
       scrollLeft: false,
       scrollRight: false,
     },
-    // The cursor sits at the end of the entry line. Placing it *within* a
-    // MathPrint structure needs a measured mapping from the cursor path to a
-    // rendered column, which format.js does not expose yet — see TODO below.
     cursor: state.historyCursor == null && !state.error
-      ? { line: Math.max(0, lines.length - 1), col: null, style: state.entry.insertMode ? 'underline' : 'block' }
+      ? {
+        line: Math.max(0, lines.length - 1),
+        marker: CURSOR_MARK,
+        style: state.entry.insertMode ? 'underline' : 'block',
+      }
       : null,
     error: state.error,
     menu: state.menu ? M.toMenuModel(state.menu) : null,
@@ -662,8 +681,6 @@ export function render(state) {
 /* -------------------------------------------------------------------------- */
 /* Known gaps — see PROJECT_STATE.md "Known divergences"                       */
 /*                                                                             */
-/* - The cursor renders at the end of the entry line rather than at its true   */
-/*   position inside a MathPrint fraction or exponent.                         */
 /* - The `data` editor (spec 6.1) opens its menu but cell editing and list     */
 /*   conversions are not implemented, so 1-Var/2-Var stats cannot be run from  */
 /*   the keypad yet. stats.js itself is complete and tested.                   */

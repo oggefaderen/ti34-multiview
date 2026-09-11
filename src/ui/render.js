@@ -178,6 +178,31 @@ function insertCursorAt(container, col, style) {
   container.appendChild(makeCursorEl(style));
 }
 
+/**
+ * Place the cursor where the engine marked it.
+ *
+ * The engine splices a marker character into the content at the cursor
+ * position (DisplayModel.cursor.marker), so the cursor lands correctly even
+ * inside a stacked fraction or an exponent, where no single column number
+ * would mean anything. Here we just find that character, remove it, and put
+ * the cursor element in its place.
+ */
+function insertCursorAtMarker(container, marker, style) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const at = node.nodeValue.indexOf(marker);
+    if (at >= 0) {
+      const after = node.splitText(at);
+      after.nodeValue = after.nodeValue.slice(marker.length); // drop the marker
+      node.parentNode.insertBefore(makeCursorEl(style), after);
+      return true;
+    }
+    node = walker.nextNode();
+  }
+  return false;
+}
+
 // ---------------------------------------------------------------------
 // Indicators
 // ---------------------------------------------------------------------
@@ -349,7 +374,11 @@ export function render(model, root = document) {
     linesEl.appendChild(div);
 
     if (hasCursorHere && line.align !== 'two-part') {
-      insertCursorAt(div, model.cursor.col, model.cursor.style);
+      if (model.cursor.marker) {
+        insertCursorAtMarker(div, model.cursor.marker, model.cursor.style);
+      } else {
+        insertCursorAt(div, model.cursor.col, model.cursor.style);
+      }
     }
   });
 
