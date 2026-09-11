@@ -4,7 +4,7 @@
 the end of every work session so that a new person — or a new agent with no
 conversation history — can continue without needing to reconstruct context.
 
-Last updated: 2026-09-10 · commit `92b6070` · branch `main` · CI green · 217 tests
+Last updated: 2026-09-11 · commit `6467722` · branch `main` · CI green · 279 tests
 
 ---
 
@@ -41,30 +41,31 @@ to the real device.
 - `src/engine/tokens.js` — 45-key table, single source of truth for the layout.
 - `src/engine/value.js`, `src/engine/eos.js` — math core. Read the Node-shape
   contract in `eos.js`'s header before touching anything that builds entries.
-- `src/engine/stats.js` — 1-var and 2-var statistics. The guidebook's
-  braking-distance dataset is a test and reproduces its published regression
-  to all ten displayed digits.
+- `src/engine/stats.js` — 1-var and 2-var statistics; the guidebook's
+  braking-distance dataset reproduces its published regression exactly.
 - `src/engine/format.js` — Value -> Layout, notation modes, MathPrint.
-- `mac/main.swift`, `build.sh` — the app builds, launches and reports
+- `src/engine/menus.js` — every menu as data, plus navigation. Exports
+  `MODE_DEFAULTS`, which calculator.js should adopt as its initial mode state.
+- `src/ui/index.html`, `src/ui/faceplate.css` — faceplate replica.
+- `src/ui/render.js`, `src/ui/input.js` — DisplayModel -> DOM, and the
+  keyboard/click mapping.
+- `mac/main.swift`, `build.sh` — the app builds, launches, and reports
   `ui ready: 45 keys rendered` from inside the bundle.
-- `src/ui/index.html`, `src/ui/faceplate.css` — the faceplate replica. Palette
-  sampled from a production-unit photograph.
 
-**217 tests passing.**
+**279 tests passing.**
 
 ### In progress
 
 | Unit | Files |
 |---|---|
 | Entry-line editing | `src/engine/entry.js` |
-| Menu model | `src/engine/menus.js` |
-| Renderer + keyboard input | `src/ui/render.js`, `src/ui/input.js` |
 
 ### Not started
 
-| Unit | Files | Depends on |
+| Unit | Files | Notes |
 |---|---|---|
-| State machine | `src/engine/calculator.js` | everything above; it is the integration point |
+| State machine | `src/engine/calculator.js` | the integration point; everything else waits on it |
+| Final wiring | `src/ui/index.html` | still renders static placeholder content; must import render.js + input.js and drive them from calculator.js |
 
 ---
 
@@ -135,6 +136,26 @@ this confusing to diagnose. Consequences:
 - To open the UI in a browser you must serve it: `python3 -m http.server 8000`,
   then `http://localhost:8000/src/ui/index.html`. Double-clicking the file
   silently renders a dead page.
+
+**Keyboard mappings are silently wrong until they bite.** `+` was wired to
+divide for a while, because README's table listed `+ - * /` against the
+operators in the calculator's physical column order and that read as a
+positional pairing. `test/input-map.test.js` now pins every binding. If you
+add a key, add it there too.
+
+**Browser automation cannot test the keyboard here.** Synthetic keystrokes
+from the automation tool arrive with empty `key`/`code`. Dispatch
+`new KeyboardEvent('keydown', {key: '+'})` from page JS instead, or test the
+exported maps directly in Node.
+
+**Screenshots:** `screencapture` needs Screen Recording permission that the
+agent shell does not have, but headless Chrome works and is how
+`docs/screenshot.png` was made:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+      --screenshot=/tmp/shot.png --window-size=900,1680 \
+      --force-device-scale-factor=2 --virtual-time-budget=3000 \
+      http://localhost:8731/src/ui/index.html
 
 **`node --test test/` fails on Node 22.** A bare directory argument is resolved
 as a *module* path (`Cannot find module .../test`). Use the glob form,
