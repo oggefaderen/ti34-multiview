@@ -217,11 +217,20 @@ function buildFractionCore(absN, d, mode) {
 function formatFraction(v, mode, opts) {
   let display = v;
   let showMarker = false;
+  const fullyReduced = value.reduce(v);
+
+  // A value that reduces to a whole number is not a fraction on screen, so it
+  // never carries the not-in-lowest-terms marker: 8/2 reads "4", not "4↓".
+  // (Spec 5.5 makes the same distinction from the other side -- `►simp` on a
+  // non-fraction is a DOMAIN error.)
+  if (fullyReduced.d === 1n) {
+    return formatPlainNumber(value.toNumber(fullyReduced), mode, opts);
+  }
+
   if (mode.simp === 'AUTOSIMP') {
-    display = value.reduce(v);
+    display = fullyReduced;
   } else {
-    const red = value.reduce(v);
-    showMarker = red.n !== v.n || red.d !== v.d;
+    showMarker = fullyReduced.n !== v.n || fullyReduced.d !== v.d;
   }
   if (display.d === 1n) {
     // AUTOSIMP fully reduced this to a whole number — display as a plain
@@ -253,12 +262,16 @@ function formatPiRat(v, mode, opts) {
   let coeffN = absN;
   let coeffD = d;
   let showMarker = false;
-  if (mode.simp === 'AUTOSIMP') {
-    const red = value.reduce({ k: 'rat', n: absN, d });
+  const red = value.reduce({ k: 'rat', n: absN, d });
+  if (red.d === 1n) {
+    // Whole-number coefficient: "4π" is already in lowest terms as displayed,
+    // so no marker, whichever simplification mode is set. 8÷2π must read 4π.
+    coeffN = red.n;
+    coeffD = 1n;
+  } else if (mode.simp === 'AUTOSIMP') {
     coeffN = red.n;
     coeffD = red.d;
   } else {
-    const red = value.reduce({ k: 'rat', n: absN, d });
     showMarker = red.n !== absN || red.d !== d;
   }
   let core;

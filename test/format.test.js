@@ -489,3 +489,27 @@ describe('formatEntry: operators between operands render inline, unchanged', () 
     assert.equal(flatten(formatEntry([ansNode()], mode())), 'Ans');
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* Regression: the MANSIMP marker on whole-number results                      */
+/* -------------------------------------------------------------------------- */
+
+test('spec 3/5.5 — a result that reduces to a whole number carries no marker', () => {
+  // value.js deliberately does not reduce, so 8 / 2 is carried as rat(8,2).
+  // It must still display as "4", not "4↓": the marker means "not in lowest
+  // terms", and a whole number is not a fraction on screen at all. Spec 5.5
+  // makes the same distinction from the other side — `►simp` applied to a
+  // non-fraction is a DOMAIN error.
+  const mode = {
+    angle: 'DEG', notation: 'NORM', decimals: 'FLOAT',
+    entry: 'MATHPRINT', fracStyle: 'Un/d', simp: 'MANSIMP',
+  };
+  const flat = (l) => (l.t === 'text' ? l.text
+    : l.t === 'row' ? l.items.map(flat).join('')
+    : l.t === 'frac' ? `${flat(l.num)}/${flat(l.den)}`
+    : '?');
+
+  assert.equal(flat(formatValue(value.rat(8n, 2n), mode)), '4');
+  assert.equal(flat(formatValue(value.pirat(8n, 2n), mode)), '4π', '8 / 2 pi reads 4pi');
+  assert.match(flat(formatValue(value.rat(6n, 12n), mode)), /↓/, '6/12 is genuinely unreduced');
+});
