@@ -8,7 +8,7 @@ Click the keys, or just type. Every key has a keyboard binding, and pressing a
 physical key lights up the corresponding key on the faceplate, so the layout
 sinks in while you practise.
 
-![the faceplate](docs/screenshot.png)
+<img src="docs/screenshot.png" alt="The virtual TI-34 MultiView faceplate" width="360">
 
 ## What it does
 
