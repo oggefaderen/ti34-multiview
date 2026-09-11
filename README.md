@@ -69,7 +69,10 @@ Press `?` in the app for this table at any time.
 | Key | Calculator |
 |---|---|
 | `0`–`9` `.` | digits and decimal point |
-| `+` `-` `*` `/` | ÷ × − + |
+| `+` | + |
+| `-` | − |
+| `*` | × |
+| `/` | ÷ |
 | `(` `)` | parentheses |
 | `Enter` or `=` | `enter` |
 | `Esc` | `clear` |

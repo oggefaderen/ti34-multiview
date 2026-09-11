@@ -166,8 +166,12 @@ body {
 /* The LCD itself. `render.js` owns everything inside #lcd-lines and
    #annunciators; this file only lays out the frame. */
 .lcd {
-  flex: 1 1 auto;
+  /* The physical LCD is 96 x 31 pixels showing 4 lines of 16 characters, so
+     it is a wide, shallow panel. Letting it stretch to fill the bezel made it
+     far too tall and left the text floating in empty space. */
+  flex: 0 0 auto;
   width: 100%;
+  aspect-ratio: 96 / 34;
   background: var(--color-lcd-bg);
   background-image: linear-gradient(165deg, var(--color-lcd-bg) 0%, var(--color-lcd-bg-dark) 100%);
   border-radius: calc(var(--fp-unit) * 1.4);
@@ -220,8 +224,10 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   gap: 0.15em;
-  font-size: calc(var(--fp-unit) * 2.55);
-  line-height: 1.18;
+  /* Sized so 4 lines fill the panel height: the hardware has no spare room
+     inside the LCD, and text floating in a half-empty screen reads wrong. */
+  font-size: calc(var(--fp-unit) * 5.3);
+  line-height: 1.2;
 }
 
 .lcd-line {
