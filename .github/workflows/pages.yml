@@ -1,0 +1,74 @@
+# Publishes the calculator as a plain web page at
+# https://oggefaderen.github.io/ti34-multiview/
+#
+# This works because the UI has no native dependency: src/ui/main.js imports
+# only the engine, render.js and input.js — there is no WebKit message handler
+# and no custom URL scheme anywhere in src/ui. The Swift shell in mac/ is a
+# window around what is already a static site.
+#
+# So the site is a literal copy of src/, not a rebuild of it. Nothing is
+# rewritten and no paths change, which means the page can never drift from
+# what the .app ships.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; don't cancel one midway, a half-deployed site
+# is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: build and deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp -R src _site/src
+          # src/ui/main.js imports '../engine/...', so src/ui and src/engine
+          # have to keep their relative positions — hence the copy of the
+          # whole tree and a redirect at the root rather than a flattened
+          # layout.
+          cat > _site/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>Virtual TI-34 MultiView</title>
+            <meta http-equiv="refresh" content="0; url=src/ui/index.html">
+            <link rel="canonical" href="src/ui/index.html">
+          </head>
+          <body>
+            <p><a href="src/ui/index.html">Open the calculator</a></p>
+          </body>
+          </html>
+          HTML
+
+      - uses: actions/configure-pages@v5
+        with:
+          # Turns Pages on for the repo on the first run, so there is no
+          # manual visit to Settings -> Pages to forget about.
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

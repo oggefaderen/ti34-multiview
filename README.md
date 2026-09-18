@@ -1,8 +1,8 @@
 # Virtual TI-34 MultiView
 
-A macOS app that behaves like the **Texas Instruments TI-34 MultiView**
-scientific calculator — built for exam practice when you don't have the
-physical unit in front of you.
+A macOS app, and a web page, that behaves like the **Texas Instruments
+TI-34 MultiView** scientific calculator — built for exam practice when you
+don't have the physical unit in front of you.
 
 Click the keys, or just type. Every key has a keyboard binding, and pressing a
 physical key lights up the corresponding key on the faceplate, so the layout
@@ -27,6 +27,30 @@ A full clone, not an approximation:
 Behaviour is specified in [`docs/TI-34-SPEC.md`](docs/TI-34-SPEC.md), compiled
 from TI's official guidebook. Where this app and that document disagree, the
 document is right and the app has a bug.
+
+## Get it
+
+**In a browser** — nothing to install, nothing to allow, works on any machine:
+
+<https://oggefaderen.github.io/ti34-multiview/>
+
+**As a Mac app** — download the `.zip` from
+[Releases](https://github.com/oggefaderen/ti34-multiview/releases/latest),
+unzip it, and drag `TI-34 MultiView.app` into `/Applications`.
+
+The app isn't signed with an Apple Developer ID, so macOS blocks the first
+launch. Open it, let macOS refuse, then go to **System Settings → Privacy &
+Security**, scroll to the bottom and click **Open Anyway**. macOS remembers
+the decision; every launch after that is an ordinary double-click. The
+terminal equivalent is:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/TI-34 MultiView.app"
+```
+
+An app you build yourself never picks up that quarantine flag in the first
+place, so if you have the Command Line Tools, the build below skips the whole
+dance.
 
 ## Build and run
 

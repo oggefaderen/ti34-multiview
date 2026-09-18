@@ -1,0 +1,68 @@
+# Tag a version, get a downloadable app.
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# Uses `gh` (preinstalled on the runner) rather than a third-party release
+# action, to keep the promise in the README that this project has no
+# third-party dependencies of any kind.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: build and publish
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A broken tag should not ship. ci.yml also runs on this push, but it
+      # can't gate this job, so re-run the engine tests here.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test 'test/**/*.test.js'
+
+      - run: ./build.sh
+
+      - name: Zip the app
+        run: |
+          cd dist
+          # ditto, not `zip -r`: it preserves the bundle's symlinks and the
+          # ad-hoc signature that swiftc applies at link time. A mangled
+          # signature means the app won't launch at all.
+          ditto -c -k --sequesterRsrc --keepParent \
+            "TI-34 MultiView.app" \
+            "TI-34-MultiView-${GITHUB_REF_NAME}.zip"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "TI-34 MultiView $GITHUB_REF_NAME" \
+            --notes "$(cat <<'NOTES'
+          Unzip and drag **TI-34 MultiView.app** into your Applications folder.
+
+          ### First launch
+
+          The app isn't signed with an Apple Developer ID, so macOS blocks it
+          the first time. Open it, let macOS refuse, then go to **System
+          Settings → Privacy & Security**, scroll to the bottom, and click
+          **Open Anyway**. macOS remembers that — every launch afterwards is an
+          ordinary double-click.
+
+          Prefer the terminal? `xattr -dr com.apple.quarantine "/Applications/TI-34 MultiView.app"` does the same thing.
+
+          ### Don't want to install anything?
+
+          It runs in a browser, with no download and no warnings:
+          https://oggefaderen.github.io/ti34-multiview/
+          NOTES
+          )" \
+            "dist/TI-34-MultiView-${GITHUB_REF_NAME}.zip"
