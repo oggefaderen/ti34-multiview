@@ -60,11 +60,12 @@ jobs:
           </html>
           HTML
 
+      # Pages must already be enabled for the repo, with Settings -> Pages ->
+      # Source set to "GitHub Actions". `enablement: true` looks like it would
+      # save that step, but it can't: creating a Pages site needs repo admin
+      # rights, and GITHUB_TOKEN doesn't have them, so it fails with
+      # "Resource not accessible by integration".
       - uses: actions/configure-pages@v5
-        with:
-          # Turns Pages on for the repo on the first run, so there is no
-          # manual visit to Settings -> Pages to forget about.
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
