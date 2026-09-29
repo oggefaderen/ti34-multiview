@@ -21,6 +21,9 @@
 //   {t:'op',    v: '+'|'-'|'*'|'/'|'intdiv'|'nPr'|'nCr'}  flat infix operator
 //   {t:'neg'}                                        flat prefix (-) marker
 //   {t:'paren', arg: Node[]}
+//   {t:'lp'} / {t:'rp'}                              a lone typed ( or ) —
+//     the keys insert these separately, as on the hardware; evaluate()
+//     pairs them into 'paren' nodes first (see groupParens)
 //   {t:'frac',  num: Node[], den: Node[]}
 //   {t:'mixed', whole: Node[], num: Node[], den: Node[]}   U n/d (spec 5.5);
 //     self-contained and ADDITIVE (whole + num/den) — this is why it needs
@@ -67,9 +70,34 @@ const { CalcError } = value;
 
 /** @param {Array} nodes @param {EvalContext} ctx */
 export function evaluate(nodes, ctx) {
+  nodes = groupParens(nodes);
   const { value: v, i } = parseConversion(nodes, 0, ctx);
   if (i !== nodes.length) throw new CalcError('SYNTAX');
   return v;
+}
+
+/**
+ * Pair the lone ( and ) the user typed into 'paren' nodes. `enter` closes
+ * any parentheses still open (spec 5.1, level 11); a ) with no ( to match
+ * is a SYNTAX error. Only this list is grouped — nested lists (fraction
+ * parts, function arguments) are grouped when evaluate() reaches them.
+ */
+function groupParens(nodes) {
+  if (!nodes.some((n) => n.t === 'lp' || n.t === 'rp')) return nodes;
+  const stack = [[]];
+  const close = () => {
+    const arg = stack.pop();
+    stack[stack.length - 1].push({ t: 'paren', arg });
+  };
+  for (const node of nodes) {
+    if (node.t === 'lp') stack.push([]);
+    else if (node.t === 'rp') {
+      if (stack.length === 1) throw new CalcError('SYNTAX');
+      close();
+    } else stack[stack.length - 1].push(node);
+  }
+  while (stack.length > 1) close();
+  return stack[0];
 }
 
 // ------------------------------------------------------ precedence levels --

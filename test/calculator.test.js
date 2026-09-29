@@ -86,6 +86,20 @@ test('spec 5.1 — parentheses override precedence', () => {
   assert.equal(answer(run('( 1 + 2 ) * 3 enter')), '9');
 });
 
+test('spec 5.1 — ( and ) are typed one at a time, not as a pair', () => {
+  assert.equal(entryText(run('(')), '(');
+  assert.equal(entryText(run('( 2 + 3 )')), '(2+3)');
+});
+
+test('spec 5.1 — enter closes any parentheses still open', () => {
+  assert.equal(answer(run('2 * ( 1 + 3 enter')), '8');
+  assert.equal(answer(run('( ( 1 + 2 ) * 3 enter')), '9');
+});
+
+test('spec 5.11 — a ) with no ( to match is a SYNTAX error', () => {
+  assert.equal(render(run('1 + 2 ) enter')).error, 'SYNTAX');
+});
+
 /* ------------------------------------------------------------- 2nd layer -- */
 
 test('spec 1 — 2nd arms the second layer and lights the indicator', () => {

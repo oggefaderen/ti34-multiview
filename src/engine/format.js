@@ -566,6 +566,10 @@ function renderPrimary(node, mode) {
       return text('Ans');
     case 'op':
       return text(OP_TEXT[node.v] ?? node.v);
+    case 'lp':
+      return text('(');
+    case 'rp':
+      return text(')');
     case 'paren': {
       const inner = renderSequence(node.arg || [], mode);
       return row(text('('), ...inner, text(')'));

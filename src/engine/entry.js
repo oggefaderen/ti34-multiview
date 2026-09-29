@@ -255,6 +255,24 @@ export function insertNode(entry, node, { classic = false } = {}) {
 }
 
 /**
+ * The `)` key. It types a lone `)` when a `(` before the cursor in this list
+ * is still open. Otherwise, inside a function's argument (`sin(`), it steps
+ * past that function's own closing bracket; anywhere else it types the `)`
+ * anyway and lets evaluation report the SYNTAX error, as the hardware does.
+ */
+export function closeParen(entry) {
+  const list = listAt(entry);
+  let open = 0;
+  for (const node of list.slice(0, entry.cursor.offset)) {
+    if (node.t === 'lp') open++;
+    else if (node.t === 'rp' && open > 0) open--;
+  }
+  const owner = ownerAt(entry, entry.cursor.path);
+  if (open === 0 && owner && owner.t === 'func') return moveRight(entry);
+  return insertNode(entry, { t: 'rp' });
+}
+
+/**
  * Type a digit or decimal point. Consecutive digits extend the number node
  * immediately before the cursor rather than creating a new one, so "3", "2",
  * "5" builds one `{t:'num', v:'325'}`.

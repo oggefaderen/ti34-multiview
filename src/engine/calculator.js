@@ -266,8 +266,8 @@ function homeKey(state, keyId, second) {
 
     case 'neg': return typeInto(state, (e) => E.insertNode(e, { t: 'neg' }));
     case 'pi': return typeInto(state, (e) => E.insertNode(e, { t: 'const', v: 'pi' }));
-    case 'lparen': return typeInto(state, (e) => E.insertNode(e, { t: 'paren', arg: [] }));
-    case 'rparen': return copy(state, { entry: E.moveCursor(state.entry, 'right') });
+    case 'lparen': return typeInto(state, (e) => E.insertNode(e, { t: 'lp' }));
+    case 'rparen': return typeInto(state, E.closeParen);
     case 'square': return typeInto(state, (e) => E.insertNode(e, { t: 'postfix', v: 'square' }));
     case 'sqrt': return typeInto(state, (e) => E.insertNode(e, { t: 'sqrt', arg: [] }));
     case 'pow': return typeInto(state, (e) => E.insertNode(e, { t: 'pow', exp: [] }));
